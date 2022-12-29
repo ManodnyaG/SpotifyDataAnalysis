@@ -35,30 +35,19 @@ df = df.na.drop()
 df.count()
 df.registerTempTable("charts")
 
-n_song = st.selectbox(label='Please select a song', options=df1.title.unique()) 
+n_country = st.selectbox(label='Please select a country', options=df1.region.unique()) 
     
-query2 = ("SELECT region,count(trend) as trend FROM charts WHERE title like '{}' and trend like '%MOVE_UP%' group by region;").format(n_song)
+query = "SELECT title, count(title) AS count FROM charts WHERE rank = 1 and region = '{}' GROUP BY title  ORDER BY count DESC;".format(n_country) 
 
-art = spark.sql(query2).toPandas()
-
-reg = art.region.tolist()
-reg = reg[:30]
-move_up = art.trend.tolist()
-move_up = move_up[:30]
-
-
-
-
-df1 = pd.DataFrame({
-  'move_up': move_up,
-  'region': reg
-})
-
-df1
-st.subheader('Below graph represents the number of times the selected song has moved up in position in perticular region')
-df1
-
+reg = spark.sql(query).toPandas().head(10) 
+st.subheader("Based on the country selected, below graph represents which song has been at rank 1 most number of times")
+check = st.checkbox('View query')
 if check:
-    st.code('''"SELECT region,count(trend) as trend FROM charts WHERE title like '{}' and trend like '%MOVE_UP%' group by region;").format(n_song)''')
-df1 = df1.rename(columns={'region':'index'}).set_index('index')    
-st.bar_chart(df1)
+    st.code('query = "SELECT title, count(title) AS count FROM charts WHERE rank = 1 and region = {} GROUP BY title  ORDER BY count DESC;".format(n_country)')
+fig = plt.bar(reg['title'],reg['count'])
+plt.xticks(rotation=90)
+plt.title('Title Vs Count')
+plt.xlabel('title')
+plt.ylabel('count')
+st.pyplot()
+st.set_option('deprecation.showPyplotGlobalUse', False)
